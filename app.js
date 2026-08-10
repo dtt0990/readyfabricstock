@@ -15,7 +15,7 @@ function t(k){return state?.content?.[lang]?.[k]??SEED.content?.[lang]?.[k]??k}
 function setText(id,v){const e=document.getElementById(id);if(e)e.textContent=v??""}
 function groupName(g){return t("group_"+g)} function groupDesc(g){return t("app_"+g)}
 function qtyLabel(b){return b==="1000+"?t("qty1000"):b==="500-999"?t("qty500"):t("qtyUnder")}
-function priceLabel(p){return p==="Liên hệ trực tiếp Sales"?(lang==="en"?"Contact Sales":lang==="zh"?"请联系销售":p):p}
+function priceLabel(p){return lang==="en"?"Contact Sales":lang==="zh"?"请联系销售":"Liên hệ trực tiếp Sales"}
 function dataLabel(v){if(v==="Đang cập nhật")return lang==="en"?"Updating":lang==="zh"?"更新中":"Đang cập nhật";return v}
 function finishLabel(v){v=String(v||"");if(v==="Hoàn tất theo hiện trạng lô")return lang==="en"?"Finishing as available":lang==="zh"?"按现货状态后整理":v;return v.replace("Water Repellent",lang==="vi"?"Chống bám nước":lang==="zh"?"防泼水":"Water Repellent").replace("Cire Finish",lang==="vi"?"Hoàn tất Cire":lang==="zh"?"轧光整理":"Cire Finish")}
 function repName(id){return state.representativeGroups.find(x=>x.id===id)?.name||id}
@@ -125,7 +125,7 @@ window.removeContact=async i=>{const c=state.contacts[i];state.contacts.splice(i
 
 // Products
 function renderProductAdmin(){const term=(productAdminSearch.value||"").toLowerCase();const items=state.products.filter(p=>!term||[p.fabric_code,p.lot_code,p.composition].join(" ").toLowerCase().includes(term)).slice(0,50);productAdminList.innerHTML=items.map(p=>`<div class="card mb-2"><div class="card-body"><div class="row g-2 align-items-center"><div class="col-lg-3"><strong>${esc(p.fabric_code)}</strong><div class="small text-secondary">${esc(p.lot_code)}</div></div><div class="col-lg-3 small">${esc(dataLabel(p.composition))}</div><div class="col-lg-2"><input class="form-control form-control-sm p-edit" data-id="${p.id}" data-k="qty_m" type="number" value="${p.qty_m}"></div><div class="col-lg-2"><input class="form-control form-control-sm p-edit" data-id="${p.id}" data-k="reference_price" value="${esc(p.reference_price)}"></div><div class="col-lg-2 d-flex gap-2 flex-wrap"><label class="form-check"><input class="form-check-input p-check" data-id="${p.id}" data-k="featured" type="checkbox" ${p.featured?"checked":""}> ${esc(t("featured"))}</label><label class="form-check"><input class="form-check-input p-check" data-id="${p.id}" data-k="active" type="checkbox" ${p.active?"checked":""}> ${esc(t("active"))}</label></div></div></div></div>`).join("");document.querySelectorAll(".p-edit").forEach(e=>e.onchange=()=>updateProductField(e));document.querySelectorAll(".p-check").forEach(e=>e.onchange=()=>updateProductField(e))}
-async function updateProductField(e){const p=state.products.find(x=>x.id===e.dataset.id);p[e.dataset.k]=e.type==="checkbox"?e.checked:(e.dataset.k==="qty_m"?+e.value:e.value);p.qty_bucket=p.qty_m>=1000?"1000+":p.qty_m>=500?"500-999":"<500";const {error}=await sb.from("products").upsert(p);if(error)alert(error.message);await renderAll()}
+async function updateProductField(e){const p=state.products.find(x=>x.id===e.dataset.id);p[e.dataset.k]=e.type==="checkbox"?e.checked:(e.dataset.k==="qty_m"?+e.value:e.value);p.qty_bucket=p.qty_m>=1000?"1000+":p.qty_m>=500?"500-999":"<500";p.reference_price="Liên hệ trực tiếp Sales";const {error}=await sb.from("products").upsert(p);if(error)alert(error.message);await renderAll()}
 productAdminModal.addEventListener("show.bs.modal",renderProductAdmin);productAdminSearch.addEventListener("input",renderProductAdmin)
 
 // Initialize/sync current packaged version
@@ -134,7 +134,7 @@ async function initializeSupabase(){
  initializeBtn.disabled=true;initializeBtn.textContent="Syncing...";
  try{
   let r=await sb.from("site_settings").upsert({id:1,content:SEED.content,fabric_map:SEED.fabricMap,representative_groups:SEED.representativeGroups,initialized:false,updated_at:new Date().toISOString()});if(r.error)throw r.error;
-  for(let i=0;i<SEED.products.length;i+=200){r=await sb.from("products").upsert(SEED.products.slice(i,i+200));if(r.error)throw r.error}
+  const productsToSync=SEED.products.map(p=>({...p,reference_price:"Liên hệ trực tiếp Sales"}));for(let i=0;i<productsToSync.length;i+=200){r=await sb.from("products").upsert(productsToSync.slice(i,i+200));if(r.error)throw r.error}
   if(SEED.contacts.length){r=await sb.from("sales_contacts").upsert(SEED.contacts);if(r.error)throw r.error}
   for(const [key,url] of Object.entries(SEED_IMAGES)){
    const response=await fetch(url);if(!response.ok)throw new Error("Cannot read seed image: "+key);
