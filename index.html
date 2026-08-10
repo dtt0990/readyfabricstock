@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>THTTEX Ready Stock Fabric Program</title>
+<link rel="stylesheet" href="vendor/bootstrap.min.css"><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+<nav class="navbar navbar-expand-xl sticky-top shadow-sm"><div class="container-xxl">
+<a class="navbar-brand d-flex align-items-center gap-2" href="#" id="homeLink"><div class="logo" id="logoBox">LOGO</div><div class="brand-copy"><div class="brand-title">THTTEX</div><div class="brand-sub" id="brandSubtitle"></div></div></a>
+<button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#mainNav"><span class="navbar-toggler-icon"></span></button>
+<div class="collapse navbar-collapse" id="mainNav">
+<ul class="navbar-nav main-nav mx-xl-auto gap-1 mt-3 mt-xl-0">
+<li><button class="nav-link active" data-page="home" id="navHome"></button></li><li><button class="nav-link" data-page="explore" id="navExplore"></button></li><li><button class="nav-link" data-page="contact" id="navContact"></button></li>
+</ul>
+<div class="d-flex gap-2 align-items-center mt-3 mt-xl-0"><div class="btn-group lang bg-light p-1 rounded-3"><button class="btn" data-lang="en">EN</button><button class="btn" data-lang="vi">VI</button><button class="btn" data-lang="zh">中文</button></div><button class="btn btn-outline-primary fw-bold" id="editBtn"></button><button class="btn btn-outline-secondary d-none" id="logoutBtn"></button></div>
+</div></div></nav>
+
+<main class="container-xxl py-4 py-lg-5">
+<section id="homePage">
+<div class="hero rounded-4 text-white p-4 p-md-5 mb-5"><div class="row align-items-center g-4 g-lg-5">
+<div class="col-lg-7"><div class="eyebrow mb-3" id="eyebrow"></div><h1 class="hero-title fw-bold" id="heroTitle"></h1><p class="hero-copy" id="heroText"></p>
+<div class="d-flex flex-wrap gap-2 my-4"><span class="badge hero-badge rounded-pill px-3 py-2" id="badge1"></span><span class="badge hero-badge rounded-pill px-3 py-2" id="badge2"></span><span class="badge hero-badge rounded-pill px-3 py-2" id="badge3"></span><span class="badge hero-badge rounded-pill px-3 py-2" id="badge4"></span></div>
+<div class="d-flex gap-2 flex-wrap"><button class="btn btn-light fw-bold px-4" id="ctaExplore"></button><button class="btn btn-outline-light fw-bold px-4" id="ctaContact"></button></div>
+</div><div class="col-lg-5"><div class="media-frame rounded-4 shadow" id="heroMedia"></div></div></div></div>
+<div class="mb-5"><h2 class="section-title h3" id="applicationTitle"></h2><p class="section-copy" id="applicationText"></p><div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-4 mt-1" id="applicationGrid"></div></div>
+<div><h2 class="section-title h3" id="featuredTitle"></h2><p class="section-copy" id="featuredText"></p><div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mt-1" id="featuredGrid"></div></div>
+</section>
+
+<section id="explorePage" class="d-none">
+<h2 class="section-title h3" id="exploreTitle"></h2><p class="section-copy" id="exploreText"></p>
+<div class="card filter-card rounded-4 my-4"><div class="card-body"><div class="row g-3">
+<div class="col-lg-4"><input class="form-control" id="searchInput"></div><div class="col-sm-6 col-lg-2"><select class="form-select" id="groupFilter"></select></div><div class="col-sm-6 col-lg-2"><select class="form-select" id="compFilter"></select></div><div class="col-sm-6 col-lg-2"><select class="form-select" id="widthFilter"></select></div><div class="col-sm-6 col-lg-2"><select class="form-select" id="qtyFilter"></select></div><div class="col-lg-4"><select class="form-select" id="finishFilter"></select></div>
+</div></div></div>
+<div class="small text-secondary mb-3" id="resultCount"></div><div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" id="productGrid"></div><nav class="mt-4"><ul class="pagination justify-content-center flex-wrap" id="pager"></ul></nav>
+</section>
+
+<section id="contactPage" class="d-none">
+<h2 class="section-title h3" id="contactTitle"></h2><p class="section-copy" id="contactText"></p><div class="contact-banner rounded-4 shadow my-4" id="contactMedia"></div><div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" id="contactGrid"></div>
+</section>
+</main>
+
+<button class="btn btn-primary admin-fab admin-only align-items-center gap-2 px-4 py-3" data-bs-toggle="offcanvas" data-bs-target="#adminCanvas">⚙ <span id="adminLabel"></span></button>
+<div class="offcanvas offcanvas-end" id="adminCanvas"><div class="offcanvas-header"><h5 class="offcanvas-title text-primary fw-bold" id="adminTitle"></h5><button class="btn-close" data-bs-dismiss="offcanvas"></button></div><div class="offcanvas-body"><div class="d-grid gap-2">
+<div class="alert alert-light small"><span class="status-dot status-seed me-2" id="statusDot"></span><span id="dataStatus"></span></div>
+<button class="btn btn-light text-start fw-bold text-primary p-3" data-bs-toggle="modal" data-bs-target="#textModal" id="editTextLabel"></button>
+<button class="btn btn-light text-start fw-bold text-primary p-3" data-bs-toggle="modal" data-bs-target="#imageModal" id="imagesLabel"></button>
+<button class="btn btn-light text-start fw-bold text-primary p-3" data-bs-toggle="modal" data-bs-target="#mappingModal" id="mappingLabel"></button>
+<button class="btn btn-light text-start fw-bold text-primary p-3" data-bs-toggle="modal" data-bs-target="#contactAdminModal" id="contactsLabel"></button>
+<button class="btn btn-light text-start fw-bold text-primary p-3" data-bs-toggle="modal" data-bs-target="#productAdminModal" id="productsLabel"></button>
+<button class="btn btn-success text-start fw-bold p-3" id="initializeBtn"></button>
+</div></div></div>
+
+<div class="modal fade" id="detailModal"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content rounded-4"><div class="modal-header"><h5 class="modal-title text-primary fw-bold" id="detailTitle"></h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailBody"></div></div></div></div>
+
+<div class="modal fade" id="loginModal"><div class="modal-dialog"><div class="modal-content rounded-4"><div class="modal-header"><h5 class="modal-title text-primary fw-bold">Admin Login</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><form id="loginForm"><div class="modal-body"><label class="form-label">Email</label><input class="form-control mb-3" type="email" id="loginEmail" required><label class="form-label">Password</label><input class="form-control" type="password" id="loginPassword" required><div class="alert alert-danger d-none mt-3" id="loginError"></div></div><div class="modal-footer"><button class="btn btn-primary" type="submit">Login</button></div></form></div></div></div>
+
+<div class="modal fade" id="textModal"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content rounded-4"><div class="modal-header"><h5 class="modal-title text-primary fw-bold" id="textTitle"></h5><button class="btn-close" data-bs-dismiss="modal"></button></div><form id="textForm"><div class="modal-body"><ul class="nav nav-pills gap-2 mb-4" id="textLangTabs"></ul><div class="row g-3" id="textFields"></div></div><div class="modal-footer"><button class="btn btn-light" type="button" data-bs-dismiss="modal" id="cancelText"></button><button class="btn btn-primary" type="submit" id="saveText"></button></div></form></div></div></div>
+
+<div class="modal fade" id="imageModal"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content rounded-4"><div class="modal-header"><h5 class="modal-title text-primary fw-bold" id="imagesTitle"></h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="themeImageEditor"></div><hr><div id="applicationImageEditor"></div><hr><div id="representativeImageEditor"></div></div></div></div></div>
+
+<div class="modal fade" id="mappingModal"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content rounded-4"><div class="modal-header"><h5 class="modal-title text-primary fw-bold" id="mappingTitle"></h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p class="small text-secondary" id="mappingHelp"></p><input class="form-control mb-3" id="mappingSearch"><div id="mappingList"></div></div></div></div></div>
+
+<div class="modal fade" id="contactAdminModal"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content rounded-4"><div class="modal-header"><h5 class="modal-title text-primary fw-bold" id="contactsTitle"></h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="contactAdminList"></div><button class="btn btn-primary" id="addContactBtn"></button></div></div></div></div>
+
+<div class="modal fade" id="productAdminModal"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content rounded-4"><div class="modal-header"><h5 class="modal-title text-primary fw-bold" id="productsTitle"></h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input class="form-control mb-3" id="productAdminSearch" placeholder="Search fabric / lot"><div id="productAdminList"></div></div></div></div></div>
+
+<script src="vendor/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script><script src="seed-data.js"></script><script src="seed-images.js"></script><script src="app.js"></script>
+</body></html>
