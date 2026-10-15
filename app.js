@@ -6,8 +6,8 @@ const BUCKET=CFG.storageBucket||"thttex-stock-images";
 const GROUPS=["Jacket & Lining","Sportswear & Stretch","Bag & Outdoor","Workwear & Uniform"];
 const LANGHTML={en:"en",vi:"vi",zh:"zh-CN"};
 
-let sb=null,state=null,lang=localStorage.getItem("thttexLang")||"en",isAdmin=false,editMode=false,initialized=false,page=1,pageSize=24,textLang="en",textDraft=null;
-let onlineImageMap=new Map();
+let sb=null,state=JSON.parse(JSON.stringify(SEED)),lang=localStorage.getItem("thttexLang")||"en",isAdmin=false,editMode=false,initialized=false,page=1,pageSize=24,textLang="en",textDraft=null;
+let onlineImageMap=new Map(),backendReady=false,backendError="";
 
 function clone(v){return JSON.parse(JSON.stringify(v))}
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
@@ -24,7 +24,8 @@ function pathForKey(key){return key.replace(/[^A-Za-z0-9._-]+/g,"_")+".jpg"}
 
 function requireConfig(){
  if(!CFG.supabaseUrl||!CFG.supabaseKey)throw new Error("Supabase is not configured. Open config.js and add Project URL + Publishable key.");
- sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey);
+ if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase client is temporarily unavailable.");
+ if(!sb)sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey);
 }
 async function checkAdmin(){
  const {data:{session}}=await sb.auth.getSession();
@@ -38,6 +39,8 @@ async function loadOnline(){
   sb.from("sales_contacts").select("*").order("sort_order"),
   sb.from("images").select("*")
  ]);
+ const firstError=sR.error||pR.error||cR.error||iR.error;
+ if(firstError)throw firstError;
  initialized=!!sR.data?.initialized;
  state={
   content:sR.data?.content||clone(SEED.content),
@@ -49,6 +52,26 @@ async function loadOnline(){
  onlineImageMap=new Map();
  for(const r of iR.data||[]){const {data}=sb.storage.from(BUCKET).getPublicUrl(r.storage_path);onlineImageMap.set(r.image_key,data.publicUrl)}
 }
+async function connectBackend(){
+ try{
+  requireConfig();
+  await checkAdmin();
+  await loadOnline();
+  backendReady=true;
+  backendError="";
+  return true;
+ }catch(e){
+  backendReady=false;
+  backendError=e?.message||String(e);
+  isAdmin=false;
+  editMode=false;
+  initialized=false;
+  onlineImageMap=new Map();
+  state=clone(SEED);
+  return false;
+ }
+}
+
 async function imageUrl(key){
  if(onlineImageMap.has(key))return onlineImageMap.get(key);
  if(!initialized&&SEED_IMAGES[key])return SEED_IMAGES[key];
@@ -71,8 +94,8 @@ function renderStatic(){
  setText("editBtn",isAdmin?(editMode?t("editing"):t("editMode")):"Admin Login");setText("logoutBtn","Log out");
  [["adminLabel","admin"],["adminTitle","admin"],["editTextLabel","editText"],["imagesLabel","manageImages"],["mappingLabel","manageMapping"],["contactsLabel","manageContacts"],["productsLabel","manageProducts"],["textTitle","editText"],["imagesTitle","manageImages"],["mappingTitle","mappingTitle"],["mappingHelp","mappingHelp"],["contactsTitle","manageContacts"],["productsTitle","manageProducts"],["saveText","save"],["cancelText","cancel"],["addContactBtn","addContact"]].forEach(([id,k])=>setText(id,t(k)));
  setText("initializeBtn",initialized?"Sync current version to Supabase":"Initialize Supabase with current version");
- setText("dataStatus",initialized?"Supabase data is active":"Using packaged seed until first initialization");
- statusDot.className="status-dot me-2 "+(initialized?"status-ready":"status-seed");
+ setText("dataStatus",backendReady?(initialized?"Supabase data is active":"Supabase connected • using packaged seed until initialization"):"Seed mode • Supabase temporarily unavailable");
+ statusDot.className="status-dot me-2 "+(backendReady&&initialized?"status-ready":"status-seed");
  document.querySelectorAll("[data-lang]").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
  document.getElementById("app").classList.toggle("admin-mode",isAdmin&&editMode);
  logoutBtn.classList.toggle("d-none",!isAdmin);
@@ -150,11 +173,47 @@ async function initializeSupabase(){
 initializeBtn.onclick=initializeSupabase;
 
 // Auth
-editBtn.onclick=()=>{if(isAdmin){editMode=!editMode;renderAll()}else bootstrap.Modal.getOrCreateInstance(loginModal).show()}
-logoutBtn.onclick=async()=>{await sb.auth.signOut();isAdmin=false;editMode=false;await loadOnline();await renderAll()}
-loginForm.onsubmit=async e=>{e.preventDefault();loginError.classList.add("d-none");let r=await sb.auth.signInWithPassword({email:loginEmail.value,password:loginPassword.value});if(r.error){loginError.textContent=r.error.message;loginError.classList.remove("d-none");return}r=await sb.rpc("is_admin");if(r.error||!r.data){loginError.textContent="This account is not authorized as an admin.";loginError.classList.remove("d-none");await sb.auth.signOut();return}isAdmin=true;editMode=true;await loadOnline();bootstrap.Modal.getInstance(loginModal).hide();await renderAll()}
+editBtn.onclick=async()=>{
+ if(isAdmin){editMode=!editMode;await renderAll();return}
+ if(!backendReady){
+  const ok=await connectBackend();
+  await renderAll();
+  if(!ok){alert("Website is available in view mode, but online Admin is temporarily unavailable.\n\n"+backendError);return}
+ }
+ bootstrap.Modal.getOrCreateInstance(loginModal).show()
+}
+logoutBtn.onclick=async()=>{
+ if(sb)await sb.auth.signOut();
+ isAdmin=false;editMode=false;
+ const ok=await connectBackend();
+ await renderAll();
+}
+loginForm.onsubmit=async e=>{
+ e.preventDefault();loginError.classList.add("d-none");
+ if(!backendReady){
+  const ok=await connectBackend();
+  if(!ok){loginError.textContent="Supabase is temporarily unavailable. "+backendError;loginError.classList.remove("d-none");return}
+ }
+ let r=await sb.auth.signInWithPassword({email:loginEmail.value,password:loginPassword.value});
+ if(r.error){loginError.textContent=r.error.message;loginError.classList.remove("d-none");return}
+ r=await sb.rpc("is_admin");
+ if(r.error||!r.data){loginError.textContent="This account is not authorized as an admin.";loginError.classList.remove("d-none");await sb.auth.signOut();return}
+ isAdmin=true;editMode=true;await loadOnline();bootstrap.Modal.getInstance(loginModal).hide();await renderAll()
+}
 
 async function renderAll(){renderStatic();renderApplications();renderFeatured();renderFilters();renderExplore();renderContacts();await hydrateImages()}
 document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>showPage(b.dataset.page));document.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{lang=b.dataset.lang;localStorage.setItem("thttexLang",lang);renderAll()});homeLink.onclick=e=>{e.preventDefault();showPage("home")};ctaExplore.onclick=()=>showPage("explore");ctaContact.onclick=()=>showPage("contact");["searchInput","groupFilter","compFilter","widthFilter","qtyFilter","finishFilter"].forEach(id=>document.getElementById(id).addEventListener(id==="searchInput"?"input":"change",()=>{page=1;renderExplore();hydrateImages()}));
 
-(async()=>{try{requireConfig();await checkAdmin();await loadOnline();await renderAll()}catch(e){document.body.innerHTML=`<div class="container py-5"><div class="alert alert-danger"><strong>Setup required:</strong> ${esc(e.message)}</div></div>`}})();
+(async()=>{
+ // Public-first boot: the website must remain usable even if Supabase/CDN is unavailable.
+ state=clone(SEED);
+ initialized=false;
+ backendReady=false;
+ onlineImageMap=new Map();
+ await renderAll();
+
+ // Upgrade silently to live Supabase data when the backend is available.
+ const ok=await connectBackend();
+ await renderAll();
+ if(!ok)console.warn("THTTEX Ready Stock is running in seed fallback mode:",backendError);
+})();
